@@ -29,3 +29,42 @@ FROM `data-analytics-435214.avocado_data.avocado_prices`
 WHERE
   Total_Bags <>0
 
+/* EXTRACT function pulls out just the year from the entire date listed
+*/
+
+SELECT 
+  EXTRACT(YEAR FROM starttime) AS year,
+  COUNT(*) AS number_of_rides
+FROM
+  `bigquery-public-data.new_york_citibike.citibike_trips` 
+GROUP BY
+  year
+ORDER BY
+  year DESC
+
+/* Using subtraction operator to find the difference in ridership between
+years
+*/
+
+SELECT 
+  station_name,
+  ridership_2013,
+  ridership_2014,
+  ridership_2014-ridership_2013 AS change_2014_raw
+FROM 
+  `bigquery-public-data.new_york_subway.subway_ridership_2013_present` 
+
+/*
+Using division operator instead of AVG function to find average
+ridership over four years at each station
+*/
+
+SELECT 
+  station_name,
+  ridership_2013,
+  ridership_2014,
+  ridership_2015,
+  ridership_2016,
+  (ridership_2013 + ridership_2014 + ridership_2015 + ridership_2016)/4
+FROM 
+  `bigquery-public-data.new_york_subway.subway_ridership_2013_present` 
