@@ -138,3 +138,72 @@ WHERE start_station_id IN
         ORDER BY avg_duration DESC
         LIMIT 5
     );
+
+/* The objective of this query is to aggregate the data into a table containing 
+each warehouse's ID, state and alias, and  number of orders; as well as the grand 
+total of orders for all warehouses combined; and finally a column that classifies 
+each warehouse by the percentage of grand total orders that it fulfilled: 0–20%, 
+21-60%, or > 60%. 
+*/
+
+SELECT
+  Warehouse.warehouse_id,
+  CONCAT(Warehouse.state, ': ', Warehouse.warehouse_alias) AS warehouse_name,
+  COUNT(Orders.order_id) AS number_of_orders,
+  (SELECT COUNT(*) FROM `data-analytics-435214.warehouse_orders.orders` AS Orders) AS total_orders,
+  CASE
+    WHEN COUNT(Orders.order_id)/(SELECT COUNT(*) FROM `data-analytics-435214.warehouse_orders.orders` AS Orders) <= 0.20
+    THEN 'Fulfilled 0-20% of Orders'
+    WHEN COUNT(Orders.order_id)/(SELECT COUNT(*) FROM `data-analytics-435214.warehouse_orders.orders` AS Orders) >= 0.20
+    AND COUNT(Orders.order_id)/(SELECT COUNT(*) FROM `data-analytics-435214.warehouse_orders.orders` AS Orders) <= 0.60
+    THEN 'Fulfilled 21-60% of Orders'
+    ELSE 'Fulfilled more than 60% of Orders'
+    END AS fulfillment_summary
+    
+FROM 
+  `data-analytics-435214.warehouse_orders.warehouse` AS Warehouse
+LEFT JOIN 
+  `data-analytics-435214.warehouse_orders.orders` AS Orders
+  ON Orders.warehouse_id = Warehouse.warehouse_id
+GROUP BY
+  Warehouse.warehouse_id,
+  warehouse_name
+HAVING
+  COUNT(Orders.order_id) > 0
+
+
+/*The query will group the product industries by name so the report results will fall
+ under each industry title. ORDER BY and DESC will tell the query to order the output
+  by count_reports in descending order so, the industry with the most amount of 
+  reports will appear at the top of the output table. LIMIT will limit the results 
+  to ten industries with the highest numbers of reports. */
+
+SELECT 
+products_industry_name, 
+COUNT(report_number) AS count_reports
+--SELECT is used to identify the product industries by name. COUNT will count the number of reports and label them as count_reports.
+FROM bigquery-public-data.fda_food.food_events
+GROUP BY products_industry_name
+ORDER BY count_reports DESC
+LIMIT 10;
+
+/*
+*/
+
+SELECT 
+products_industry_name, 
+COUNT(report_number) AS count_hospitalizations
+FROM
+bigquery-public-data.fda_food.food_events
+WHERE products_industry_name IN
+(SELECT 
+products_industry_name
+FROM 
+bigquery-public-data.fda_food.food_events
+GROUP BY products_industry_name
+ORDER BY COUNT(report_number) DESC LIMIT 10)
+AND outcomes LIKE '%Hospitalization%'
+--The AND operator displays a record if all the conditions are TRUE.
+--The LIKE operator is used in a WHERE clause to search for a specified pattern in a column.
+GROUP BY products_industry_name
+ORDER BY count_hospitalizations DESC;
